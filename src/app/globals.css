@@ -17,5 +17,9 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.bg-gradient-center {
+  background: radial-gradient(circle, #ADD8E6, #FFFFFF);
 }

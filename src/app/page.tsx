@@ -2,6 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import Brazil from "@react-map/brazil";
 import axios from "axios";
+import UploadForm from "@/components/uploadForm";
+import { Bounce, ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Home() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -35,9 +38,24 @@ export default function Home() {
     'Sergipe': 'SE',
     'Tocantins': 'TO'
   };
+  
   const handleSelect = (state: any) => {
     setSelectedState(state);
   };
+
+  function renderGroup(key: string){
+    switch(key) {
+      case '1': 
+        return 'Cidades até 20 mil habitantes'
+      case '2':
+        return 'Cidades entre 20 e 100 mil habitantes'
+      case '3': 
+        return 'Cidades entre 100 mil e 1 milhão de habitantes'
+      default:
+        return 'Cidadedes acima de 1 milhão de habitantes'
+    }
+  }
+
   useEffect(() => {
     async function getStateHistory() {
       try {
@@ -45,69 +63,89 @@ export default function Home() {
           const history = await axios.get(`http://localhost:5000/state/${ufsBrasil[selectedState].toLowerCase()}`);
           setData(history.data);
         } else {
-          setData([]); 
+          setData([]);
         }
       } catch (err) {
-        console.log(err);
+        toast.error('Erro ao recuperar dados das pesquisas', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+          transition: Bounce,
+          });
       }
     }
     getStateHistory();
   }, [selectedState]);
 
   return (
-    <div className="flex mt-4 mr-4 ml-4">
-      <div>
-        <h1>Mapa do Brasil</h1>
-        {selectedState && <p>Estado Selecionado: {ufsBrasil[selectedState]}</p>}
-        <Brazil
-          size={1200}
-          hoverColor="orange"
-          type='select-single'
-          hints={true}
-          onSelect={handleSelect}
-        />
-      </div>
-      {selectedState && (
-        <div>
-          <h2>Evolução dos candidatos no estado {ufsBrasil[selectedState]}</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-            {data && data.map((el, index) => {
-              const state = Object.entries(el);
-              const citiesGroup = state[0][1]; /
-
-              let previousData = '';
-              const grupos = []; 
-
-
-              Object.entries(citiesGroup).forEach(([key, value]) => {
-                const currentData = value.data;
-
-              
-                if (currentData !== previousData) {
-                  grupos.push(<h3 key={`data-${currentData}`}>Pesquisa {currentData}</h3>);
-                  previousData = currentData; 
-                }
-
-
-                grupos.push(
-                  <div key={`grupo-${key}`} style={{ border: '1px solid #ccc', padding: '10px', borderRadius: '5px', flex: '1 1 200px' }}>
-                    <h4>Grupo {key}:</h4>
-                    {Object.entries(value.candidatos).map(([candidato, detalhes]) => {
-                     
-                      const formattedCandidato = candidato.charAt(0).toUpperCase() + candidato.slice(1).replace(/([A-Z])/g, ' $1').trim();
-                      return (
-                        <p key={candidato}>{formattedCandidato}: {detalhes.porcentagem}%</p>
-                      );
-                    })}
-                  </div>
-                );
-              });
-
-              return <div key={`state-${index}`} style={{ flex: '1 1 250px' }}>{grupos}</div>; 
-            })}
+    <div className="bg-gradient-center">
+      <h1 className="pt-4 text-center font-bold text-3xl">Evolução da corrida eleitoral para presidente no Brasil</h1>
+      <div className="flex  justify-center h-full mt-4">
+        <div className="mt-4">
+          <div className="ml-[250px] items-end">
+            <Brazil
+              size={1000}
+              hoverColor="blue"
+              type='select-single'
+              hints={true}
+              onSelect={handleSelect}
+            />
+            <div className="justify-self-center mr-[30%]">
+              <UploadForm />
+            </div>
           </div>
+          
         </div>
-      )}
+        {selectedState && (
+          <div className="mt-4 mb-8">
+            <h2 className="mb-12">Evolução dos candidatos no estado {ufsBrasil[selectedState]}</h2>
+            <div className="flex flex-wrap gap-5">
+              {data && data.map((el, index) => {
+                const state = Object.entries(el);
+                const citiesGroup = state[0][1];
+
+                let previousData = '';
+                const grupos: any = [];
+
+
+                Object.entries(citiesGroup).forEach(([key, value]) => {
+                  const currentData = value.data;
+
+
+                  if (currentData !== previousData) {
+                    grupos.push(<h3 key={`data-${currentData}`} className="mb-2 font-bold text-center">Pesquisa {currentData}</h3>);
+                    previousData = currentData;
+                  }
+
+
+                  grupos.push(
+                    <div key={`grupo-${key}`} className="p-4 w-[300px] h-[124px] mb-2 font-roboto" style={{ border: '1px solid #ccc', padding: '16px', borderRadius: '5px' }}>
+                      <h4>{renderGroup(key)}:</h4>
+                      {Object.entries(value.candidatos).map(([candidate, details]) => {
+
+                        const formattedCandidato = candidate.charAt(0).toUpperCase() + candidate.slice(1).replace(/([A-Z])/g, ' $1').trim();
+                        return (
+                          <p key={candidate}>{formattedCandidato}: {details.porcentagem}%</p>
+                        );
+                      })}
+                    </div>
+                  );
+                });
+
+                return <div key={`state-${index}`}>{grupos}</div>;
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
+
+
+
   );
 };
